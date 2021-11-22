@@ -34,7 +34,9 @@ public class Administration {
             if(!player.isAdmin){
                 //防止玩家在 30 秒内两次发送相同的消息
                 if(message.equals(player.lastSentMessage) && Time.getTimeSinceMillis(player.lastMessageTime) < 1000 * 30){
-                    player.sendSystemMessage("您可能不会两次发送相同的消息.");
+                    //player.sendSystemMessage("您可能不会两次发送相同的消息.");
+                    //player.sendSystemMessageLocal("err.antiSpam");
+                    player.sendSystemMessage(player.localeUtil.getinput("err.antiSpam"));
                     return null;
                 }
                 player.lastSentMessage = message;

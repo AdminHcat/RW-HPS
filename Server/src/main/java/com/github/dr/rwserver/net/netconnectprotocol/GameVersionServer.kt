@@ -471,7 +471,7 @@ open class GameVersionServer(connectionAgreement: ConnectionAgreement) : Abstrac
     override fun reConnect() {
         try {
             if (!Data.config.ReConnect) {
-                sendKick("不支持重连 # Does not support reconnection")
+                sendKick(player.localeUtil.getinput("kick.noReConnect"))
                 return
             }
             super.isDis = false
