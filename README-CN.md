@@ -12,8 +12,9 @@
 用于在运行 Java21 的服务器上快速建立高性能游戏服务器  
 旨在作为一个高性能, 高可用的服务器 为玩家提供和官方服务器一样的游戏体验
 
-_**生命不息，折腾不止**_
-
+_~~**生命不息，折腾不止**~~_  
+**!!! 项目归档 !!!**  
+**!!! Project Archive !!!**  
 **Thank you for staying with me for four years. We have experienced a lot, but life has dreams and each of them is wonderful. At present, I have no interest in maintenance/development.**  
 **感谢陪伴四年, 我们经历很多, 但是 人生有梦, 各自精彩, 目前我已无兴趣进行维护/开发**
 </div>
