@@ -77,6 +77,17 @@ class PlayerBindMain : Plugin() {
                                     send.send()
                                 }
                             })
+                            addWebGetInstance("/api/getBindData", object: WebGet() {
+                                override fun get(accept: AcceptWeb, send: SendWeb) {
+                                    val json = stringUrlDataResolveToJson(accept)
+                                    try {
+                                        send.setData(plguinData[json.getString("hex"), ""])
+                                    } catch (_: Exception) {
+                                        send.setData("ERROR Parse")
+                                    }
+                                    send.send()
+                                }
+                            })
                         }.run {
                             val netServiceTcp1 = NetService(NetService.coreID(), IRwHpsManage.addIRwHps(IRwHps.NetType.HttpProtocol, "BindWebService"))
                             netServiceTcp1.setWebData(this)

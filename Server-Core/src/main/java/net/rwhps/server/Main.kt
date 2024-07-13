@@ -93,6 +93,10 @@ object Main {
     @JvmStatic
     @Throws(Exception::class)
     fun main(args: Array<String>) {
+        SystemSetProperty.setJlineIdea()
+        SystemSetProperty.setOnlyIpv4()
+        SystemSetProperty.setAwtHeadless()
+
         // 夹带点私活 都给我听 UnicornPhantom
         Statisticians.addTime("Core.Main")
         Data.mainParameters = BeanMainParameters.create(args)
@@ -100,11 +104,6 @@ object Main {
         /* OFF WARN */
         set("TRACK")
         Log.set("TRACK")
-
-        SystemSetProperty.setJlineIdea()
-        SystemSetProperty.setOnlyIpv4()
-        SystemSetProperty.setAwtHeadless()
-
 
         Logger.getLogger("io.netty").level = Level.OFF
 

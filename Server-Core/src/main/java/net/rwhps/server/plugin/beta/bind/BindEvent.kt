@@ -9,6 +9,7 @@
 
 package net.rwhps.server.plugin.beta.bind
 
+import net.rwhps.server.data.global.Data
 import net.rwhps.server.game.event.core.EventListenerHost
 import net.rwhps.server.game.event.game.PlayerJoinEvent
 import net.rwhps.server.game.player.PlayerHess
@@ -30,9 +31,19 @@ class BindEvent(
     @EventListenerHandler
     fun playerJoin(event: PlayerJoinEvent){
         if (config.force) {
-            val data = plguinData[event.player.connectHexID, ""]
-            if (data.isEmpty() && config.apiPort != 0) {
-                a(event.player)
+            var data = ""
+            if (config.apiConsole.isNotEmpty()) {
+                data = Data.core.http.doGet("http://${config.apiConsole}/api/getBindData?hex=${event.player.connectHexID}")
+                if (data.isEmpty()) {
+                    event.player.kickPlayer("服务器强制绑定, 您未满足")
+                } else {
+                    plguinData[event.player.connectHexID] = data
+                }
+            } else if (config.apiPort != 0) {
+                data = plguinData[event.player.connectHexID, ""]
+                if (data.isEmpty()) {
+                    a(event.player)
+                }
             }
         }
     }
@@ -41,9 +52,7 @@ class BindEvent(
         player.sendPopUps("请输入绑定码") {
             val d = codeList[it, ""]
             if (d.isEmpty()) {
-                player.sendPopUps("错误, 您已被踢出") {
-                    player.kickPlayer("", 0)
-                }
+                player.kickPlayer("错误, 您已被踢出", 0)
             } else {
                 codeList.remove(it)
                 plguinData[player.connectHexID] = d

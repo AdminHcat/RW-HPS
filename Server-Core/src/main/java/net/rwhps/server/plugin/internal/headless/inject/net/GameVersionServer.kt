@@ -172,8 +172,9 @@ open class GameVersionServer(val playerConnectX: PlayerConnectX): AbstractNetCon
         val o = GameOutputStream()
         o.writeString(reason)
         sendPacket(o.createPacket(PacketType.KICK))
-        Thread.sleep(1000)
-        disconnect()
+        val dis = GameOutputStream()
+        dis.writeString("kicked")
+        sendPacket(dis.createPacket(PacketType.DISCONNECT))
     }
 
     override fun sendPing() {

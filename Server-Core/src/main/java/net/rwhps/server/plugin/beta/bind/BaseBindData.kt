@@ -23,6 +23,7 @@ data class BaseBindData(
     val use: Boolean = false,
     val force: Boolean = false,
     val apiPort: Int = 0,
+    val apiConsole:String = "",
 ): AbstractBeanConfig(
         this::class.java, ""
 ) {
