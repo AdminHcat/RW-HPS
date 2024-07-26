@@ -14,6 +14,9 @@ import net.rwhps.server.core.thread.Threads
 import net.rwhps.server.data.global.Data
 import net.rwhps.server.data.global.NetStaticData
 import net.rwhps.server.func.StrCons
+import net.rwhps.server.game.event.EventManage
+import net.rwhps.server.game.event.core.EventListenerHost
+import net.rwhps.server.game.event.game.ServerGameOverEvent
 import net.rwhps.server.game.manage.HeadlessModuleManage
 import net.rwhps.server.game.player.PlayerHess
 import net.rwhps.server.net.NetService
@@ -22,6 +25,7 @@ import net.rwhps.server.net.core.server.AbstractNetConnectServer
 import net.rwhps.server.plugin.Plugin
 import net.rwhps.server.util.IpUtils
 import net.rwhps.server.util.algorithms.Base64
+import net.rwhps.server.util.annotations.core.EventListenerHandler
 import net.rwhps.server.util.file.json.Json
 import net.rwhps.server.util.game.command.CommandHandler
 import net.rwhps.server.util.inline.ifEmptyResult
@@ -29,6 +33,7 @@ import net.rwhps.server.util.log.Log
 import net.rwhps.server.util.str.StringFilteringUtil.cutting
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.thread
 
 
 internal class UpListMain: Plugin() {
@@ -57,9 +62,22 @@ internal class UpListMain: Plugin() {
     private lateinit var removeData: String
 
     private var uplistFlag = 0
+    private var over = false
 
     override fun init() {
         AddLang(this)
+    }
+
+    override fun registerEvents(eventManage: EventManage) {
+        eventManage.registerListener(object: EventListenerHost {
+            @EventListenerHandler
+            fun gameover(gameOverEvent: ServerGameOverEvent) {
+                if (over) {
+                    remove({})
+                }
+                over = false
+            }
+        })
     }
 
     override fun registerCoreCommands(handler: CommandHandler) {
@@ -67,7 +85,6 @@ internal class UpListMain: Plugin() {
         handler.removeCommand("upserverlistnew")
 
         handler.register("uplist", "[command...]", "serverCommands.upserverlist") { args: Array<String>?, log: StrCons ->
-
             if (!args.isNullOrEmpty()) {
                 when (args[0]) {
                     "add" -> NetStaticData.checkServerStartNet { if (args.size > 1) add(log, args[1]) else add(log) }
@@ -95,11 +112,16 @@ internal class UpListMain: Plugin() {
             if (isAdmin(player)) {
                 when (uplistFlag) {
                     0 -> {
-                        handler.handleMessage("uplist add")
-                        player.sendSystemMessage("add uplist")
-                        uplistFlag = 1
+                        thread {
+                            player.sendSystemMessage("耐心等待, 错误信息不打印, 请自行在控制台提前实验")
+                            if (initUpListData()) {
+                                over = true
+                                this.port = port.ifBlank { Data.config.port.toString() }
+                                Threads.newThreadCore { upServerList = true; uplistFlag = 1;uplist(player::sendSystemMessage) }
+                            }
+                        }
                     }
-                    else -> player.sendSystemMessage("uplisting")
+                    else -> player.sendSystemMessage("Already on the list")
                 }
 
             }
@@ -108,9 +130,10 @@ internal class UpListMain: Plugin() {
             if (isAdmin(player)) {
                 when (uplistFlag) {
                     1 -> {
-                        handler.handleMessage("uplist remove")
-                        player.sendSystemMessage("remove uplist")
-                        uplistFlag = 0
+                        thread {
+                            player.sendSystemMessage("耐心等待")
+                            remove(player::sendSystemMessage)
+                        }
                     }
                     else -> player.sendSystemMessage("no uplist")
                 }
@@ -181,14 +204,14 @@ internal class UpListMain: Plugin() {
         if (!upServerList) {
             if (initUpListData()) {
                 this.port = port.ifBlank { Data.config.port.toString() }
-                Threads.newThreadCore { upServerList = true; uplistFlag = 1;uplist() }
+                Threads.newThreadCore { upServerList = true; uplistFlag = 1;uplist(Log::clog) }
             }
         } else {
             log("Already on the list")
         }
     }
 
-    private fun uplist() {
+    private fun uplist(print: (String)->Unit) {
         var addData0 = addData.replace("{RW-HPS.RW.VERSION}", versionGame)
         addData0 = addData0.replace("{RW-HPS.RW.VERSION.INT}", versionGameInt.toString())
         addData0 = addData0.replace("{RW-HPS.RW.IS.VERSION}", versionBeta.toString())
@@ -210,12 +233,12 @@ internal class UpListMain: Plugin() {
         val addGs4 = Data.core.rwHttp.doPost("http://gs4.corrodinggames.net/masterserver/1.4/interface", addData0).contains(serverID)
         if (addGs1 || addGs4) {
             if (addGs1 && addGs4) {
-                Log.clog(Data.i18NBundle.getinput("err.yesList"))
+                print(Data.i18NBundle.getinput("err.yesList"))
             } else {
-                Log.clog(Data.i18NBundle.getinput("err.ynList"))
+                print(Data.i18NBundle.getinput("err.ynList"))
             }
         } else {
-            Log.clog(Data.i18NBundle.getinput("err.noList"))
+            print(Data.i18NBundle.getinput("err.noList"))
         }
 
         val openData0 = openData.replace("{RW-HPS.S.PORT}", port)
@@ -225,9 +248,9 @@ internal class UpListMain: Plugin() {
         val checkPortGs4 = Data.core.rwHttp.doPost("http://gs4.corrodinggames.net/masterserver/1.4/interface", openData0)
             .contains("true")
         if (checkPortGs1 || checkPortGs4) {
-            Log.clog(Data.i18NBundle.getinput("err.yesOpen"))
+            print(Data.i18NBundle.getinput("err.yesOpen"))
         } else {
-            Log.clog(Data.i18NBundle.getinput("err.noOpen"))
+            print(Data.i18NBundle.getinput("err.noOpen"))
         }
 
         Threads.newTimedTask(CallTimeTask.CustomUpServerListTask, 50, 50, TimeUnit.SECONDS) { update() }
@@ -271,7 +294,7 @@ internal class UpListMain: Plugin() {
 
     private val isRelay get() = (NetStaticData.RwHps.netType == IRwHps.NetType.RelayProtocol || NetStaticData.RwHps.netType == IRwHps.NetType.RelayMulticastProtocol)
 
-    private val getMapName get() = Data.config.subtitle.ifEmptyResult({ if (isRelay) "" else HeadlessModuleManage.hps.room.maps.mapName }) { cutting(it, 15) }
+    private val getMapName get() = Data.config.subtitle.ifEmptyResult({ if (isRelay) "RELAY" else HeadlessModuleManage.hps.room.maps.mapName }) { cutting(it, 15) }
 
     private val serverPlayerSize get() = AtomicInteger().apply {
         if (isRelay) {

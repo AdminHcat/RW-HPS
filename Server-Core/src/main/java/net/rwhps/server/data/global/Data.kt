@@ -88,7 +88,7 @@ object Data {
     const val SERVER_ID_RELAY_GET = "net.rwhps.server.relayGetUUIDHex.Dr"
 
     /** 服务器主版本 */
-    const val SERVER_CORE_VERSION = "3.0.0-M8"
+    const val SERVER_CORE_VERSION = "3.0.0-M9"
 
     /** 服务器Topt密码  */
     const val TOPT_KEY = "net.rwhps.server.topt # RW-HPS Team"

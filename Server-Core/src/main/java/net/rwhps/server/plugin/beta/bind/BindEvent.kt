@@ -15,7 +15,11 @@ import net.rwhps.server.game.event.game.PlayerJoinEvent
 import net.rwhps.server.game.player.PlayerHess
 import net.rwhps.server.struct.map.ObjectMap
 import net.rwhps.server.util.annotations.core.EventListenerHandler
+import net.rwhps.server.util.file.FileUtils
 import net.rwhps.server.util.file.plugin.PluginData
+import net.rwhps.server.util.inline.coverConnect
+import net.rwhps.server.util.inline.toPrettyPrintingJson
+import net.rwhps.server.util.log.Log
 
 /**
  *
@@ -25,8 +29,8 @@ import net.rwhps.server.util.file.plugin.PluginData
  */
 class BindEvent(
     private val config: BaseBindData,
-    private val plguinData: PluginData,
-    private val codeList: ObjectMap<String, String>
+    private val pluginDataFileUtils: FileUtils,
+    private val codeList: ObjectMap<String, BindDataJson>
 ): EventListenerHost {
     @EventListenerHandler
     fun playerJoin(event: PlayerJoinEvent){
@@ -36,12 +40,17 @@ class BindEvent(
                 data = Data.core.http.doGet("http://${config.apiConsole}/api/getBindData?hex=${event.player.connectHexID}")
                 if (data.isEmpty()) {
                     event.player.kickPlayer("服务器强制绑定, 您未满足")
-                } else {
-                    plguinData[event.player.connectHexID] = data
+                    return
                 }
             } else if (config.apiPort != 0) {
-                data = plguinData[event.player.connectHexID, ""]
-                if (data.isEmpty()) {
+                var falsg = true
+                codeList.values.forEach {
+                    if (it.hex == event.player.connectHexID) {
+                        falsg = false
+                        return
+                    }
+                }
+                if (falsg) {
                     a(event.player)
                 }
             }
@@ -50,12 +59,18 @@ class BindEvent(
 
     fun a(player: PlayerHess) {
         player.sendPopUps("请输入绑定码") {
-            val d = codeList[it, ""]
-            if (d.isEmpty()) {
+            val d = codeList[it]
+            if (d == null) {
                 player.kickPlayer("错误, 您已被踢出", 0)
             } else {
-                codeList.remove(it)
-                plguinData[player.connectHexID] = d
+                if (d.hex.isNotEmpty()) {
+                    player.kickPlayer("错误, 绑定码已被使用", 0)
+                } else {
+                    d.hex = player.connectHexID
+                    d.name = player.name
+                    d.ip = player.con!!.coverConnect().ip
+                    pluginDataFileUtils.toFolder("bind").toFile(d.qq+".json").writeFile(d.toPrettyPrintingJson())
+                }
             }
         }
     }
