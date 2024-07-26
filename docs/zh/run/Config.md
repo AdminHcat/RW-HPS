@@ -65,7 +65,7 @@ RW-HPS支持在服务器控制台处更新服务器,只需输入`tryupdate`即�
 ### ipCheckMultiLanguageSupport
 #### 基于IP判断多语言支持(bool)
 可以通过玩家IP判断玩家的国家从而对每个玩家都显示它的本国语言(前提是翻译文件有那个语言)  
-默认配置为**禁用**
+默认配置为**启用**
 
 ### singleUserRelay
 #### Relay单用户模式(bool)
